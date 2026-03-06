@@ -237,16 +237,21 @@ export class TypingGame {
 
         const key = typeof keyEvent?.key === "string" ? keyEvent.key : "";
         const hasModifier = Boolean(keyEvent?.altKey || keyEvent?.ctrlKey || keyEvent?.metaKey);
+        const isCtrlBackspace = key === "Backspace"
+            && Boolean(keyEvent?.ctrlKey)
+            && !Boolean(keyEvent?.altKey || keyEvent?.metaKey);
 
         if (key === "Backspace") {
-            const previousTextLength = this.typedText.length;
-            this.typedText = this.typedText.slice(0, -1);
+            const previousText = this.typedText;
+            this.typedText = isCtrlBackspace
+                ? this.deletePreviousWord(previousText)
+                : previousText.slice(0, -1);
 
             return this.buildTypingResult({
                 blockedOnError: false,
-                inputType: "backspace",
+                inputType: isCtrlBackspace ? "word-backspace" : "backspace",
                 typedCharacter: "",
-                typedTextChanged: this.typedText.length !== previousTextLength,
+                typedTextChanged: this.typedText !== previousText,
                 shouldPreventDefault: true
             });
         }
@@ -797,6 +802,24 @@ export class TypingGame {
 
     hasTextMismatch(typedText, expectedText) {
         return !this.isPrefixMatch(typedText, expectedText);
+    }
+
+    deletePreviousWord(typedText) {
+        if (typeof typedText !== "string" || typedText.length === 0) {
+            return "";
+        }
+
+        let nextLength = typedText.length;
+
+        while (nextLength > 0 && /\s/.test(typedText[nextLength - 1])) {
+            nextLength -= 1;
+        }
+
+        while (nextLength > 0 && !/\s/.test(typedText[nextLength - 1])) {
+            nextLength -= 1;
+        }
+
+        return typedText.slice(0, nextLength);
     }
 
     normalizeSentences(sentenceData) {
