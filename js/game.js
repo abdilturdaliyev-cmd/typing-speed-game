@@ -73,7 +73,6 @@ export class TypingGame {
             this.startTimer();
         }
 
-        const hasError = !this.currentSentence.startsWith(this.typedText);
         const isComplete = this.typedText === this.currentSentence;
         const stats = this.getStats();
 
@@ -81,7 +80,7 @@ export class TypingGame {
             this.stop();
         }
 
-        return { hasError, isComplete, stats };
+        return { isComplete, stats };
     }
 
     getStats() {

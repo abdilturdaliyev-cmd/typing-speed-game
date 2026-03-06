@@ -62,7 +62,8 @@ h1 {
     display: block;
     text-align: center;
     white-space: pre-wrap;
-    word-break: break-word;
+    overflow-wrap: normal;
+    word-break: normal;
     color: #cbd5e1;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -71,6 +72,16 @@ h1 {
     position: relative;
     display: inline-block;
     transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+#sentence-box .word {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+#sentence-box .space-char {
+    display: inline;
 }
 
 #sentence-box .char.correct {
@@ -98,6 +109,11 @@ h1 {
     border-radius: 2px;
     background: rgba(168, 85, 247, 0.95);
     animation: caret-blink 1s steps(1, end) infinite;
+}
+
+#sentence-box .space-char.current {
+    display: inline-block;
+    min-width: 0.45em;
 }
 
 #sentence-box .char.pending {

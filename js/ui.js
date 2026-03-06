@@ -33,37 +33,89 @@ export class GameUI {
         this.sentenceBox.textContent = text;
     }
 
+    createCharacterSpan(character, typedText, typedLength, charIndex, sentenceLength, isSpace = false) {
+        const charSpan = document.createElement("span");
+        charSpan.classList.add("char");
+
+        if (isSpace) {
+            charSpan.classList.add("space-char");
+        }
+
+        charSpan.textContent = character;
+
+        let isMismatch = false;
+
+        if (charIndex < typedLength) {
+            const isCorrect = typedText[charIndex] === character;
+            charSpan.classList.add(isCorrect ? "correct" : "incorrect");
+            isMismatch = !isCorrect;
+        } else if (charIndex === typedLength && typedLength < sentenceLength) {
+            charSpan.classList.add("current");
+        } else {
+            charSpan.classList.add("pending");
+        }
+
+        return { charSpan, isMismatch };
+    }
+
     renderSentence(sentence, typedText = "") {
         this.sentenceBox.textContent = "";
 
         const fragment = document.createDocumentFragment();
         const typedLength = typedText.length;
+        const sentenceLength = sentence.length;
         let hasMismatch = false;
+        let charIndex = 0;
 
-        for (let i = 0; i < sentence.length; i += 1) {
-            const charSpan = document.createElement("span");
-            charSpan.classList.add("char");
-            charSpan.textContent = sentence[i];
+        const tokens = sentence.split(/(\s+)/);
 
-            if (i < typedLength) {
-                const isCorrect = typedText[i] === sentence[i];
-                charSpan.classList.add(isCorrect ? "correct" : "incorrect");
-
-                if (!isCorrect) {
-                    hasMismatch = true;
-                }
-            } else if (i === typedLength && typedLength < sentence.length) {
-                charSpan.classList.add("current");
-            } else {
-                charSpan.classList.add("pending");
+        for (const token of tokens) {
+            if (!token) {
+                continue;
             }
 
-            fragment.appendChild(charSpan);
+            if (/^\s+$/.test(token)) {
+                for (const spaceChar of token) {
+                    const { charSpan, isMismatch } = this.createCharacterSpan(
+                        spaceChar,
+                        typedText,
+                        typedLength,
+                        charIndex,
+                        sentenceLength,
+                        true
+                    );
+
+                    fragment.appendChild(charSpan);
+                    hasMismatch = hasMismatch || isMismatch;
+                    charIndex += 1;
+                }
+
+                continue;
+            }
+
+            const wordSpan = document.createElement("span");
+            wordSpan.classList.add("word");
+
+            for (const character of token) {
+                const { charSpan, isMismatch } = this.createCharacterSpan(
+                    character,
+                    typedText,
+                    typedLength,
+                    charIndex,
+                    sentenceLength
+                );
+
+                wordSpan.appendChild(charSpan);
+                hasMismatch = hasMismatch || isMismatch;
+                charIndex += 1;
+            }
+
+            fragment.appendChild(wordSpan);
         }
 
         this.sentenceBox.appendChild(fragment);
 
-        if (typedLength > sentence.length) {
+        if (typedLength > sentenceLength) {
             hasMismatch = true;
         }
 
