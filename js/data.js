@@ -1,7 +1,22 @@
 export const sentences = [
-    "The quick brown fox jumps over the lazy dog.",
-    "Programming isn't about what you know, it's about what you can figure out.",
-    "A user interface is like a joke. If you have to explain it, it's not that good.",
-    "Simple is better than complex. Complex is better than complicated.",
-    "Any fool can write code that a computer can understand. Good programmers write code that humans can understand."
+"The quick brown fox jumps over the lazy dog.",
+"Programming is the art of telling another human what one wants the computer to do.",
+"Simplicity is the ultimate sophistication.",
+"Code is like humor. When you have to explain it, it is bad.",
+"First solve the problem, then write the code.",
+"Experience is the name everyone gives to their mistakes.",
+"In theory there is no difference between theory and practice. In practice there is.",
+"Before software can be reusable it first has to be usable.",
+"Sometimes it pays to stay in bed on Monday rather than spending the rest of the week debugging Monday's code.",
+"The best error message is the one that never shows up.",
+"Knowledge is power but enthusiasm pulls the switch.",
+"Fix the cause, not the symptom.",
+"The most dangerous phrase in the language is we have always done it this way.",
+"If debugging is the process of removing bugs then programming must be the process of putting them in.",
+"Computers are fast but programmers keep it interesting.",
+"The secret of getting ahead is getting started.",
+"A good programmer is someone who always looks both ways before crossing a one way street.",
+"Make it work, make it right, make it fast.",
+"Small programs are easier to reason about than big ones.",
+"Software is a great combination of artistry and engineering."
 ];

@@ -24,6 +24,7 @@ function startGame() {
         ui.disableInput();
         ui.clearInputClasses();
         ui.updateStats(startResult.stats);
+        ui.clearResults();
         ui.hideResults();
         ui.setStartButtonDisabled(false);
         ui.setStartButtonLabel("Start");
@@ -37,6 +38,7 @@ function startGame() {
     ui.enableInput();
     ui.focusInput();
     ui.updateStats(startResult.stats);
+    ui.clearResults();
     ui.hideResults();
     ui.setStartButtonDisabled(true);
 }
@@ -49,8 +51,8 @@ function handleTyping() {
         return;
     }
 
-    ui.setInputError(result.hasError);
-    ui.renderSentence(activeSentence, typedText);
+    const renderState = ui.renderSentence(activeSentence, typedText);
+    ui.setInputError(renderState.hasMismatch);
     ui.updateStats(result.stats);
 
     if (result.isComplete) {

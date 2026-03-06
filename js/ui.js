@@ -38,6 +38,7 @@ export class GameUI {
 
         const fragment = document.createDocumentFragment();
         const typedLength = typedText.length;
+        let hasMismatch = false;
 
         for (let i = 0; i < sentence.length; i += 1) {
             const charSpan = document.createElement("span");
@@ -45,7 +46,12 @@ export class GameUI {
             charSpan.textContent = sentence[i];
 
             if (i < typedLength) {
-                charSpan.classList.add(typedText[i] === sentence[i] ? "correct" : "incorrect");
+                const isCorrect = typedText[i] === sentence[i];
+                charSpan.classList.add(isCorrect ? "correct" : "incorrect");
+
+                if (!isCorrect) {
+                    hasMismatch = true;
+                }
             } else if (i === typedLength && typedLength < sentence.length) {
                 charSpan.classList.add("current");
             } else {
@@ -56,6 +62,12 @@ export class GameUI {
         }
 
         this.sentenceBox.appendChild(fragment);
+
+        if (typedLength > sentence.length) {
+            hasMismatch = true;
+        }
+
+        return { hasMismatch };
     }
 
     updateStats({ wpm, time, accuracy }) {
