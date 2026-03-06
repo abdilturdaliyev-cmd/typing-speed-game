@@ -1,6 +1,8 @@
 export class TypingGame {
     constructor(sentences) {
-        this.sentences = sentences;
+        this.sentences = Array.isArray(sentences)
+            ? sentences.filter((sentence) => typeof sentence === "string" && sentence.length > 0)
+            : [];
         this.currentSentence = "";
         this.typedText = "";
         this.timerId = null;
@@ -17,6 +19,15 @@ export class TypingGame {
     start() {
         if (this.isPlaying) {
             return null;
+        }
+
+        if (this.sentences.length === 0) {
+            this.reset();
+            return {
+                sentence: "",
+                stats: this.getStats(),
+                error: "NO_SENTENCES"
+            };
         }
 
         this.stop();
@@ -127,7 +138,7 @@ export class TypingGame {
     }
 
     startTimer() {
-        if (this.timerId !== null) {
+        if (!this.isPlaying || this.timerId !== null) {
             return;
         }
 
