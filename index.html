@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Typing Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="card">
+        <h1>TypeSpeed</h1>
+        
+        <div id="sentence-box">Click "Start" to reveal your sentence!</div>
+        
+        <textarea id="input-field" rows="2" disabled placeholder="Waiting for you..."></textarea>
+        
+        <div class="stats">
+            <div class="stat-badge">WPM <span id="wpm">0</span></div>
+            <div class="stat-badge">Time <span id="time">0</span>s</div>
+            <div class="stat-badge">Acc <span id="accuracy">100</span>%</div>
+        </div>
+        
+        <div class="buttons">
+            <button id="start-btn">Start</button>
+            <button id="reset-btn">Restart</button>
+        </div>
+    </div>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
