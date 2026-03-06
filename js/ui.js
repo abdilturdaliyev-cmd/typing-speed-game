@@ -3,11 +3,181 @@ const WAITING_PLACEHOLDER = "Waiting for you...";
 const ACTIVE_PLACEHOLDER = "Type the text above...";
 const COUNTDOWN_GO_LABEL = "Go";
 const DEFAULT_MODE_LABEL = "Quote";
+const SOUND_SETTING_STORAGE_KEY = "typing-game-sound-enabled-v1";
 const DEFAULT_BEST_STATS = {
     bestWPM: 0,
     bestAccuracy: 0,
     bestTime: 0
 };
+
+class SoundManager {
+    constructor() {
+        this.audioContext = null;
+        this.isEnabled = false;
+        this.lastPlaybackTimes = {
+            correct: 0,
+            error: 0,
+            complete: 0
+        };
+        this.cooldowns = {
+            correct: 45,
+            error: 80,
+            complete: 300
+        };
+    }
+
+    setEnabled(enabled) {
+        this.isEnabled = Boolean(enabled);
+    }
+
+    prime() {
+        if (!this.isEnabled) {
+            return;
+        }
+
+        const context = this.getContext();
+
+        if (!context) {
+            return;
+        }
+
+        if (context.state === "suspended") {
+            context.resume().catch(() => { });
+        }
+    }
+
+    playCorrect() {
+        if (!this.canPlay("correct")) {
+            return;
+        }
+
+        this.playTone({
+            frequency: 740,
+            endFrequency: 860,
+            duration: 0.04,
+            volume: 0.02,
+            type: "triangle"
+        });
+    }
+
+    playError() {
+        if (!this.canPlay("error")) {
+            return;
+        }
+
+        this.playTone({
+            frequency: 240,
+            endFrequency: 180,
+            duration: 0.08,
+            volume: 0.022,
+            type: "sine"
+        });
+    }
+
+    playComplete() {
+        if (!this.canPlay("complete")) {
+            return;
+        }
+
+        this.playTone({
+            frequency: 520,
+            endFrequency: 620,
+            duration: 0.07,
+            volume: 0.025,
+            type: "sine",
+            startDelay: 0
+        });
+        this.playTone({
+            frequency: 700,
+            endFrequency: 860,
+            duration: 0.09,
+            volume: 0.028,
+            type: "triangle",
+            startDelay: 0.09
+        });
+    }
+
+    canPlay(soundType) {
+        if (!this.isEnabled) {
+            return false;
+        }
+
+        const now = this.getNowMs();
+        const previousPlayTime = this.lastPlaybackTimes[soundType] || 0;
+        const cooldown = this.cooldowns[soundType] || 0;
+
+        if (now - previousPlayTime < cooldown) {
+            return false;
+        }
+
+        this.lastPlaybackTimes[soundType] = now;
+        return true;
+    }
+
+    playTone({
+        frequency,
+        endFrequency = frequency,
+        duration = 0.05,
+        volume = 0.02,
+        type = "sine",
+        startDelay = 0
+    }) {
+        const context = this.getContext();
+
+        if (!context) {
+            return;
+        }
+
+        if (context.state === "suspended") {
+            context.resume().catch(() => { });
+        }
+
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+        const startTime = context.currentTime + Math.max(0, startDelay);
+        const endTime = startTime + Math.max(0.02, duration);
+        const attackTime = Math.min(startTime + 0.01, endTime);
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+        oscillator.frequency.linearRampToValueAtTime(endFrequency, endTime);
+
+        gainNode.gain.setValueAtTime(0.0001, startTime);
+        gainNode.gain.linearRampToValueAtTime(volume, attackTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, endTime);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+        oscillator.start(startTime);
+        oscillator.stop(endTime + 0.02);
+    }
+
+    getContext() {
+        if (typeof window === "undefined") {
+            return null;
+        }
+
+        const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+
+        if (!AudioContextConstructor) {
+            return null;
+        }
+
+        if (!this.audioContext) {
+            this.audioContext = new AudioContextConstructor();
+        }
+
+        return this.audioContext;
+    }
+
+    getNowMs() {
+        if (typeof performance !== "undefined" && typeof performance.now === "function") {
+            return performance.now();
+        }
+
+        return Date.now();
+    }
+}
 
 export class GameUI {
     constructor() {
@@ -16,6 +186,8 @@ export class GameUI {
         this.quoteCategoryWrap = document.getElementById("quote-category-wrap");
         this.quoteModeSelect = document.getElementById("quote-mode");
         this.stopOnErrorToggle = document.getElementById("stop-on-error");
+        this.soundToggle = document.getElementById("sound-enabled");
+        this.soundState = document.getElementById("sound-state");
         this.countdownOverlay = document.getElementById("countdown-overlay");
         this.inputField = document.getElementById("input-field");
         this.progressFill = document.getElementById("progress-fill");
@@ -35,8 +207,11 @@ export class GameUI {
         this.bestWpmDisplay = document.getElementById("best-wpm");
         this.bestAccuracyDisplay = document.getElementById("best-accuracy");
         this.bestTimeDisplay = document.getElementById("best-time");
+        this.soundManager = new SoundManager();
         this.inputBaseHeight = this.inputField.offsetHeight;
         this.autoResizeInput();
+        const isSoundEnabled = this.loadSoundPreference();
+        this.setSoundEnabled(isSoundEnabled, false);
     }
 
     bindStart(handler) {
@@ -66,6 +241,21 @@ export class GameUI {
         this.stopOnErrorToggle.addEventListener("change", handler);
     }
 
+    bindSoundChange(handler) {
+        if (!this.soundToggle) {
+            return;
+        }
+
+        this.soundToggle.addEventListener("change", () => {
+            const isEnabled = this.soundToggle.checked;
+            this.setSoundEnabled(isEnabled);
+
+            if (typeof handler === "function") {
+                handler(isEnabled);
+            }
+        });
+    }
+
     getSelectedSessionMode() {
         return this.sessionModeSelect.value;
     }
@@ -90,9 +280,47 @@ export class GameUI {
         this.stopOnErrorToggle.checked = Boolean(enabled);
     }
 
+    isSoundEnabled() {
+        return Boolean(this.soundToggle && this.soundToggle.checked);
+    }
+
+    setSoundEnabled(enabled, shouldPersist = true) {
+        const safeEnabled = Boolean(enabled);
+
+        if (this.soundToggle) {
+            this.soundToggle.checked = safeEnabled;
+        }
+
+        if (this.soundState) {
+            this.soundState.textContent = safeEnabled ? "On" : "Off";
+        }
+
+        this.soundManager.setEnabled(safeEnabled);
+
+        if (shouldPersist) {
+            this.saveSoundPreference(safeEnabled);
+        }
+    }
+
     setQuoteCategoryEnabled(isEnabled) {
         this.quoteModeSelect.disabled = !isEnabled;
         this.quoteCategoryWrap.classList.toggle("disabled-setting", !isEnabled);
+    }
+
+    primeAudio() {
+        this.soundManager.prime();
+    }
+
+    playCorrectSound() {
+        this.soundManager.playCorrect();
+    }
+
+    playErrorSound() {
+        this.soundManager.playError();
+    }
+
+    playCompleteSound() {
+        this.soundManager.playComplete();
     }
 
     updateSentenceText(text = DEFAULT_SENTENCE_TEXT) {
@@ -222,7 +450,7 @@ export class GameUI {
         }
 
         this.ghostLegend.textContent = hasGhostPace
-            ? "Ghost pace: thin marker on progress bar"
+            ? "Ghost pace: your best run pace (thin marker on progress bar)"
             : "Ghost pace: complete one quote run to enable";
     }
 
@@ -359,5 +587,46 @@ export class GameUI {
 
         const percent = value * 100;
         return Math.max(0, Math.min(100, percent));
+    }
+
+    getLocalStorageRef() {
+        try {
+            if (typeof window !== "undefined" && window.localStorage) {
+                return window.localStorage;
+            }
+        } catch (error) {
+            return null;
+        }
+
+        return null;
+    }
+
+    loadSoundPreference() {
+        const localStorageRef = this.getLocalStorageRef();
+
+        if (!localStorageRef) {
+            return false;
+        }
+
+        try {
+            const rawValue = localStorageRef.getItem(SOUND_SETTING_STORAGE_KEY);
+            return rawValue === "true";
+        } catch (error) {
+            return false;
+        }
+    }
+
+    saveSoundPreference(isEnabled) {
+        const localStorageRef = this.getLocalStorageRef();
+
+        if (!localStorageRef) {
+            return;
+        }
+
+        try {
+            localStorageRef.setItem(SOUND_SETTING_STORAGE_KEY, String(Boolean(isEnabled)));
+        } catch (error) {
+            return;
+        }
     }
 }

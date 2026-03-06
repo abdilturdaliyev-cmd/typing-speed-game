@@ -35,6 +35,12 @@
                 <input type="checkbox" id="stop-on-error">
                 <span>Stop on error</span>
             </label>
+
+            <label class="setting-toggle" for="sound-enabled">
+                <input type="checkbox" id="sound-enabled">
+                <span>Sound</span>
+                <span id="sound-state" class="toggle-state">Off</span>
+            </label>
         </div>
 
         <div class="sentence-area">
@@ -50,7 +56,7 @@
                 <div id="ghost-marker" class="hidden"></div>
             </div>
             <div class="progress-meta">
-                <span id="ghost-legend">Ghost pace: complete one quote run to enable</span>
+                <span id="ghost-legend">Ghost pace: your best run pace</span>
                 <span>Best WPM: <strong id="best-inline-wpm">0</strong></span>
             </div>
         </div>

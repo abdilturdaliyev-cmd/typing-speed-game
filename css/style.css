@@ -98,6 +98,11 @@ h1 {
     accent-color: #8b5cf6;
 }
 
+.toggle-state {
+    color: #ddd6fe;
+    font-size: 0.82rem;
+}
+
 .disabled-setting {
     opacity: 0.45;
 }
@@ -287,7 +292,7 @@ h1 {
     height: 100%;
     background: var(--primary-gradient);
     border-radius: inherit;
-    transition: width 0.2s ease;
+    transition: width 0.15s ease-out;
 }
 
 #ghost-marker {
@@ -441,25 +446,6 @@ button:active {
     .stats {
         flex-wrap: wrap;
         gap: 0.8rem;
-    }
-
-    .settings-strip {
-        align-items: stretch;
-        gap: 0.6rem;
-    }
-
-    .setting-item {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .setting-item select {
-        width: 55%;
-    }
-
-    .progress-meta {
-        flex-direction: column;
-        align-items: flex-start;
     }
 
     button {

@@ -5,6 +5,7 @@ import { GameUI } from "./ui.js";
 const game = new TypingGame(sentences);
 const ui = new GameUI();
 let activeSentence = "";
+let lastTypedText = "";
 let countdownHideTimeoutId = null;
 let isRoundFinalized = false;
 
@@ -35,8 +36,10 @@ game.setCountdownCompleteHandler(() => {
 });
 
 function startGame() {
+    ui.primeAudio();
     clearCountdownHideTimeout();
     isRoundFinalized = false;
+    lastTypedText = "";
 
     const startResult = game.start();
 
@@ -46,6 +49,7 @@ function startGame() {
 
     if (startResult.error === "NO_SENTENCES") {
         activeSentence = "";
+        lastTypedText = "";
         ui.updateSentenceText("No sentences available. Add items in js/data.js.");
         ui.clearInput();
         ui.disableInput();
@@ -85,14 +89,23 @@ function startGame() {
 }
 
 function handleTyping() {
-    const typedText = ui.getInputValue();
-    const result = game.handleTyping(typedText);
+    const attemptedTypedText = ui.getInputValue();
+    const previousTypedText = lastTypedText;
+    const expectedText = activeSentence;
+    const result = game.handleTyping(attemptedTypedText);
 
     if (!result) {
         return;
     }
 
-    if (result.correctedTypedText !== typedText) {
+    playTypingSoundFeedback({
+        previousTypedText,
+        attemptedTypedText,
+        expectedText,
+        blockedOnError: result.blockedOnError
+    });
+
+    if (result.correctedTypedText !== attemptedTypedText) {
         ui.setInputValue(result.correctedTypedText);
     }
 
@@ -106,10 +119,39 @@ function handleTyping() {
     ui.updateProgress(result.progress);
     ui.updateGhostProgress(result.ghostProgress);
     ui.updateRunHints(result.bestStats, result.modeLabel, Number.isFinite(result.ghostProgress));
+    lastTypedText = result.sentenceChanged ? "" : result.typedText;
 
     if (result.isSessionComplete) {
         finalizeRound(result.stats, result.bestStats, result.modeLabel);
     }
+}
+
+function playTypingSoundFeedback({
+    previousTypedText,
+    attemptedTypedText,
+    expectedText,
+    blockedOnError
+}) {
+    if (attemptedTypedText.length <= previousTypedText.length) {
+        return;
+    }
+
+    if (blockedOnError) {
+        ui.playErrorSound();
+        return;
+    }
+
+    const safeExpectedText = typeof expectedText === "string" ? expectedText : "";
+    const newestCharIndex = attemptedTypedText.length - 1;
+    const typedCharacter = attemptedTypedText[newestCharIndex];
+    const expectedCharacter = safeExpectedText[newestCharIndex];
+
+    if (typedCharacter === expectedCharacter) {
+        ui.playCorrectSound();
+        return;
+    }
+
+    ui.playErrorSound();
 }
 
 function finalizeRound(stats, bestStats, modeLabel) {
@@ -118,6 +160,7 @@ function finalizeRound(stats, bestStats, modeLabel) {
     }
 
     isRoundFinalized = true;
+    ui.playCompleteSound();
     ui.disableInput();
     ui.setInputError(false);
     ui.setInputSuccess(stats.accuracy === 100);
@@ -129,6 +172,7 @@ function finalizeRound(stats, bestStats, modeLabel) {
 function resetGame() {
     clearCountdownHideTimeout();
     isRoundFinalized = false;
+    lastTypedText = "";
     game.reset();
     activeSentence = "";
     ui.setSelectedSessionMode(game.getSessionMode());
@@ -157,6 +201,12 @@ function handleStopOnErrorChange() {
     game.setStopOnError(ui.isStopOnErrorEnabled());
 }
 
+function handleSoundChange(isEnabled) {
+    if (isEnabled) {
+        ui.primeAudio();
+    }
+}
+
 function clearCountdownHideTimeout() {
     if (countdownHideTimeoutId !== null) {
         clearTimeout(countdownHideTimeoutId);
@@ -183,6 +233,7 @@ ui.bindReset(resetGame);
 ui.bindSessionModeChange(handleSessionModeChange);
 ui.bindQuoteModeChange(handleQuoteModeChange);
 ui.bindStopOnErrorChange(handleStopOnErrorChange);
+ui.bindSoundChange(handleSoundChange);
 document.addEventListener("keydown", handleKeyboardShortcuts);
 
 ui.setSelectedSessionMode(game.getSessionMode());
