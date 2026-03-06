@@ -53,7 +53,7 @@ class SoundManager {
             frequency: 740,
             endFrequency: 860,
             duration: 0.04,
-            volume: 0.02,
+            volume: 0.05,
             type: "triangle"
         });
     }
@@ -67,7 +67,7 @@ class SoundManager {
             frequency: 240,
             endFrequency: 180,
             duration: 0.08,
-            volume: 0.022,
+            volume: 0.07,
             type: "sine"
         });
     }
@@ -81,7 +81,7 @@ class SoundManager {
             frequency: 520,
             endFrequency: 620,
             duration: 0.07,
-            volume: 0.025,
+            volume: 0.18,
             type: "sine",
             startDelay: 0
         });
