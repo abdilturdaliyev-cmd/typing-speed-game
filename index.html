@@ -10,10 +10,30 @@
 
     <div class="card">
         <h1>TypeSpeed</h1>
-        
-        <div id="sentence-box">Click "Start" to reveal your sentence!</div>
+
+        <div class="mode-row">
+            <label for="quote-mode">Quote Mode:</label>
+            <select id="quote-mode" aria-label="Select quote category">
+                <option value="all">All</option>
+                <option value="coding">Coding</option>
+                <option value="motivational">Motivational</option>
+                <option value="general">General</option>
+            </select>
+        </div>
+
+        <div class="sentence-area">
+            <div id="sentence-box">Click "Start" to reveal your sentence!</div>
+            <div id="countdown-overlay" class="countdown-overlay hidden" aria-live="assertive"></div>
+        </div>
         
         <textarea id="input-field" rows="2" disabled placeholder="Waiting for you..."></textarea>
+
+        <div class="progress-wrap" aria-hidden="true">
+            <div class="progress-track">
+                <div id="progress-fill"></div>
+                <div id="ghost-marker" class="hidden"></div>
+            </div>
+        </div>
         
         <div class="stats">
             <div class="stat-badge">WPM <span id="wpm">0</span></div>
@@ -31,6 +51,10 @@
             <p>WPM: <span id="final-wpm">0</span></p>
             <p>Accuracy: <span id="final-accuracy">100</span>%</p>
             <p>Time: <span id="final-time">0</span>s</p>
+            <p class="results-subtitle">Best Scores</p>
+            <p>Best WPM: <span id="best-wpm">0</span></p>
+            <p>Best Accuracy: <span id="best-accuracy">0</span>%</p>
+            <p>Best Time: <span id="best-time">--</span></p>
         </div>
     </div>
     <script type="module" src="js/main.js"></script>
