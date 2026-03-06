@@ -2,6 +2,7 @@ const DEFAULT_SENTENCE_TEXT = 'Click "Start" to reveal your sentence!';
 const WAITING_PLACEHOLDER = "Waiting for you...";
 const ACTIVE_PLACEHOLDER = "Type the text above...";
 const COUNTDOWN_GO_LABEL = "Go";
+const DEFAULT_MODE_LABEL = "Quote";
 const DEFAULT_BEST_STATS = {
     bestWPM: 0,
     bestAccuracy: 0,
@@ -11,17 +12,23 @@ const DEFAULT_BEST_STATS = {
 export class GameUI {
     constructor() {
         this.sentenceBox = document.getElementById("sentence-box");
+        this.sessionModeSelect = document.getElementById("session-mode");
+        this.quoteCategoryWrap = document.getElementById("quote-category-wrap");
         this.quoteModeSelect = document.getElementById("quote-mode");
+        this.stopOnErrorToggle = document.getElementById("stop-on-error");
         this.countdownOverlay = document.getElementById("countdown-overlay");
         this.inputField = document.getElementById("input-field");
         this.progressFill = document.getElementById("progress-fill");
         this.ghostMarker = document.getElementById("ghost-marker");
+        this.ghostLegend = document.getElementById("ghost-legend");
+        this.bestInlineWpm = document.getElementById("best-inline-wpm");
         this.startBtn = document.getElementById("start-btn");
         this.resetBtn = document.getElementById("reset-btn");
         this.wpmDisplay = document.getElementById("wpm");
         this.timeDisplay = document.getElementById("time");
         this.accuracyDisplay = document.getElementById("accuracy");
         this.resultsBox = document.getElementById("results");
+        this.finalModeDisplay = document.getElementById("final-mode");
         this.finalWpmDisplay = document.getElementById("final-wpm");
         this.finalAccuracyDisplay = document.getElementById("final-accuracy");
         this.finalTimeDisplay = document.getElementById("final-time");
@@ -47,8 +54,24 @@ export class GameUI {
         });
     }
 
+    bindSessionModeChange(handler) {
+        this.sessionModeSelect.addEventListener("change", handler);
+    }
+
     bindQuoteModeChange(handler) {
         this.quoteModeSelect.addEventListener("change", handler);
+    }
+
+    bindStopOnErrorChange(handler) {
+        this.stopOnErrorToggle.addEventListener("change", handler);
+    }
+
+    getSelectedSessionMode() {
+        return this.sessionModeSelect.value;
+    }
+
+    setSelectedSessionMode(mode) {
+        this.sessionModeSelect.value = mode;
     }
 
     getSelectedCategory() {
@@ -59,19 +82,24 @@ export class GameUI {
         this.quoteModeSelect.value = category;
     }
 
+    isStopOnErrorEnabled() {
+        return this.stopOnErrorToggle.checked;
+    }
+
+    setStopOnErrorEnabled(enabled) {
+        this.stopOnErrorToggle.checked = Boolean(enabled);
+    }
+
+    setQuoteCategoryEnabled(isEnabled) {
+        this.quoteModeSelect.disabled = !isEnabled;
+        this.quoteCategoryWrap.classList.toggle("disabled-setting", !isEnabled);
+    }
+
     updateSentenceText(text = DEFAULT_SENTENCE_TEXT) {
         this.sentenceBox.textContent = text;
     }
 
-    createCharacterSpan(
-        character,
-        typedText,
-        typedLength,
-        charIndex,
-        sentenceLength,
-        mismatchLocked,
-        isSpace = false
-    ) {
+    createCharacterSpan(character, typedText, typedLength, charIndex, sentenceLength, isSpace = false) {
         const charSpan = document.createElement("span");
         charSpan.classList.add("char");
 
@@ -82,20 +110,18 @@ export class GameUI {
         charSpan.textContent = character;
 
         let isMismatch = false;
-        let nextMismatchLocked = mismatchLocked;
 
         if (charIndex < typedLength) {
-            const isCorrect = !mismatchLocked && typedText[charIndex] === character;
+            const isCorrect = typedText[charIndex] === character;
             charSpan.classList.add(isCorrect ? "correct" : "incorrect");
             isMismatch = !isCorrect;
-            nextMismatchLocked = mismatchLocked || !isCorrect;
         } else if (charIndex === typedLength && typedLength < sentenceLength) {
             charSpan.classList.add("current");
         } else {
             charSpan.classList.add("pending");
         }
 
-        return { charSpan, isMismatch, nextMismatchLocked };
+        return { charSpan, isMismatch };
     }
 
     renderSentence(sentence, typedText = "") {
@@ -105,7 +131,6 @@ export class GameUI {
         const typedLength = typedText.length;
         const sentenceLength = sentence.length;
         let hasMismatch = false;
-        let mismatchLocked = false;
         let charIndex = 0;
 
         const tokens = sentence.split(/(\s+)/);
@@ -117,19 +142,17 @@ export class GameUI {
 
             if (/^\s+$/.test(token)) {
                 for (const spaceChar of token) {
-                    const { charSpan, isMismatch, nextMismatchLocked } = this.createCharacterSpan(
+                    const { charSpan, isMismatch } = this.createCharacterSpan(
                         spaceChar,
                         typedText,
                         typedLength,
                         charIndex,
                         sentenceLength,
-                        mismatchLocked,
                         true
                     );
 
                     fragment.appendChild(charSpan);
                     hasMismatch = hasMismatch || isMismatch;
-                    mismatchLocked = nextMismatchLocked;
                     charIndex += 1;
                 }
 
@@ -140,18 +163,16 @@ export class GameUI {
             wordSpan.classList.add("word");
 
             for (const character of token) {
-                const { charSpan, isMismatch, nextMismatchLocked } = this.createCharacterSpan(
+                const { charSpan, isMismatch } = this.createCharacterSpan(
                     character,
                     typedText,
                     typedLength,
                     charIndex,
-                    sentenceLength,
-                    mismatchLocked
+                    sentenceLength
                 );
 
                 wordSpan.appendChild(charSpan);
                 hasMismatch = hasMismatch || isMismatch;
-                mismatchLocked = nextMismatchLocked;
                 charIndex += 1;
             }
 
@@ -191,6 +212,20 @@ export class GameUI {
         this.ghostMarker.classList.remove("hidden");
     }
 
+    updateRunHints(bestStats = DEFAULT_BEST_STATS, modeLabel = DEFAULT_MODE_LABEL, hasGhostPace = false) {
+        const safeBestWpm = Number.isFinite(bestStats.bestWPM) ? Math.round(bestStats.bestWPM) : 0;
+        this.bestInlineWpm.textContent = safeBestWpm;
+
+        if (modeLabel !== "Quote") {
+            this.ghostLegend.textContent = "Ghost pace: available in Quote mode";
+            return;
+        }
+
+        this.ghostLegend.textContent = hasGhostPace
+            ? "Ghost pace: thin marker on progress bar"
+            : "Ghost pace: complete one quote run to enable";
+    }
+
     resetProgress() {
         this.updateProgress(0);
         this.updateGhostProgress(null);
@@ -218,7 +253,11 @@ export class GameUI {
     }
 
     clearInput() {
-        this.inputField.value = "";
+        this.setInputValue("");
+    }
+
+    setInputValue(value) {
+        this.inputField.value = value;
         this.autoResizeInput();
     }
 
@@ -250,7 +289,8 @@ export class GameUI {
         this.startBtn.textContent = label;
     }
 
-    showResults({ wpm, accuracy, time }, bestStats = DEFAULT_BEST_STATS) {
+    showResults({ wpm, accuracy, time }, bestStats = DEFAULT_BEST_STATS, modeLabel = DEFAULT_MODE_LABEL) {
+        this.finalModeDisplay.textContent = modeLabel;
         this.finalWpmDisplay.textContent = wpm;
         this.finalAccuracyDisplay.textContent = accuracy;
         this.finalTimeDisplay.textContent = time;
@@ -263,6 +303,7 @@ export class GameUI {
     }
 
     clearResults() {
+        this.finalModeDisplay.textContent = DEFAULT_MODE_LABEL;
         this.finalWpmDisplay.textContent = "0";
         this.finalAccuracyDisplay.textContent = "100";
         this.finalTimeDisplay.textContent = "0";
@@ -280,7 +321,7 @@ export class GameUI {
         this.bestTimeDisplay.textContent = safeBestTime > 0 ? `${safeBestTime}s` : "--";
     }
 
-    resetScreenState(bestStats = DEFAULT_BEST_STATS) {
+    resetScreenState(bestStats = DEFAULT_BEST_STATS, modeLabel = DEFAULT_MODE_LABEL, hasGhostPace = false) {
         this.updateSentenceText(DEFAULT_SENTENCE_TEXT);
         this.clearInput();
         this.disableInput();
@@ -293,6 +334,7 @@ export class GameUI {
         this.hideCountdown();
         this.clearResults();
         this.updateBestStats(bestStats);
+        this.updateRunHints(bestStats, modeLabel, hasGhostPace);
         this.hideResults();
     }
 

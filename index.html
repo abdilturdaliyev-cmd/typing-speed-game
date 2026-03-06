@@ -11,14 +11,30 @@
     <div class="card">
         <h1>TypeSpeed</h1>
 
-        <div class="mode-row">
-            <label for="quote-mode">Quote Mode:</label>
-            <select id="quote-mode" aria-label="Select quote category">
-                <option value="all">All</option>
-                <option value="coding">Coding</option>
-                <option value="motivational">Motivational</option>
-                <option value="general">General</option>
-            </select>
+        <div class="settings-strip">
+            <div class="setting-item">
+                <label for="session-mode">Mode</label>
+                <select id="session-mode" aria-label="Select session mode">
+                    <option value="quote">Quote</option>
+                    <option value="30s">30s</option>
+                    <option value="60s">60s</option>
+                </select>
+            </div>
+
+            <div class="setting-item" id="quote-category-wrap">
+                <label for="quote-mode">Category</label>
+                <select id="quote-mode" aria-label="Select quote category">
+                    <option value="all">All</option>
+                    <option value="coding">Coding</option>
+                    <option value="motivational">Motivational</option>
+                    <option value="general">General</option>
+                </select>
+            </div>
+
+            <label class="setting-toggle" for="stop-on-error">
+                <input type="checkbox" id="stop-on-error">
+                <span>Stop on error</span>
+            </label>
         </div>
 
         <div class="sentence-area">
@@ -32,6 +48,10 @@
             <div class="progress-track">
                 <div id="progress-fill"></div>
                 <div id="ghost-marker" class="hidden"></div>
+            </div>
+            <div class="progress-meta">
+                <span id="ghost-legend">Ghost pace: complete one quote run to enable</span>
+                <span>Best WPM: <strong id="best-inline-wpm">0</strong></span>
             </div>
         </div>
         
@@ -48,6 +68,7 @@
 
         <div id="results" class="results hidden" aria-live="polite">
             <h2>Results</h2>
+            <p>Mode: <span id="final-mode">Quote</span></p>
             <p>WPM: <span id="final-wpm">0</span></p>
             <p>Accuracy: <span id="final-accuracy">100</span>%</p>
             <p>Time: <span id="final-time">0</span>s</p>

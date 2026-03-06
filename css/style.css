@@ -50,32 +50,56 @@ h1 {
     letter-spacing: -0.5px;
 }
 
-.mode-row {
+.settings-strip {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
     margin-bottom: 1rem;
 }
 
-.mode-row label {
-    color: var(--text-muted);
-    font-size: 0.95rem;
+.setting-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-#quote-mode {
+.setting-item label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.setting-item select {
     background: rgba(0, 0, 0, 0.25);
     color: var(--text-main);
     border: 1px solid var(--card-border);
     border-radius: 10px;
     padding: 0.45rem 0.65rem;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
-#quote-mode:focus {
+.setting-item select:focus {
     outline: none;
     border-color: #6366f1;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+.setting-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    user-select: none;
+}
+
+.setting-toggle input {
+    accent-color: #8b5cf6;
+}
+
+.disabled-setting {
+    opacity: 0.45;
 }
 
 .sentence-area {
@@ -279,6 +303,20 @@ h1 {
     pointer-events: none;
 }
 
+.progress-meta {
+    margin-top: 0.45rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.progress-meta strong {
+    color: #ddd6fe;
+}
+
 .stats {
     display: flex;
     justify-content: center;
@@ -403,6 +441,25 @@ button:active {
     .stats {
         flex-wrap: wrap;
         gap: 0.8rem;
+    }
+
+    .settings-strip {
+        align-items: stretch;
+        gap: 0.6rem;
+    }
+
+    .setting-item {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .setting-item select {
+        width: 55%;
+    }
+
+    .progress-meta {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     button {

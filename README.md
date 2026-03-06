@@ -1,128 +1,147 @@
-# TypeSpeed --- Typing Speed Game
+# TypeSpeed
 
-TypeSpeed is a lightweight typing game built with **HTML, CSS, and
-vanilla JavaScript**.\
-It challenges the user to type a randomly selected sentence as
-accurately and quickly as possible while tracking:
+TypeSpeed is a modular typing game built with vanilla HTML, CSS, and JavaScript (ES modules).
+It focuses on clean architecture, responsive per-character feedback, and a polished UI that is easy to extend.
 
--   **WPM (Words Per Minute)**
--   **Time**
--   **Accuracy**
+## Project Overview
 
-The project uses a modular JavaScript structure with ES modules and a
-modern dark UI design.
+The game supports both quote runs and timed sessions, with real-time stats, countdown start, progress tracking, and local best-score persistence.
+It is a static frontend project that runs in any modern browser.
 
-------------------------------------------------------------------------
+## Current Features
 
-## Features
-
--   Random sentence selection
--   Live typing input
--   Real‑time WPM calculation
--   Real‑time accuracy calculation
--   Timer that starts when typing begins
--   Restart/reset functionality
--   Modern dark glassmorphism UI
-
-------------------------------------------------------------------------
+- Modular architecture with clear separation of concerns
+- Countdown start (`3 -> 2 -> 1 -> Go`)
+- Per-character rendering and highlighting
+- Strict per-index correctness comparison
+- Optional `Stop on error` mode for stricter practice
+- Session modes:
+  - `Quote` mode (single quote completion)
+  - `30s` timed mode
+  - `60s` timed mode
+- Quote categories:
+  - `All`
+  - `Coding`
+  - `Motivational`
+  - `General`
+- Progress bar with ghost marker support
+- Ghost pace replay (quote mode)
+- Real-time stats:
+  - WPM
+  - Time
+  - Accuracy
+- Results panel with mode-aware summary
+- Best-score persistence via `localStorage`
+  - Best WPM
+  - Best Accuracy
+  - Best Time
+- Keyboard shortcuts:
+  - `Escape` resets the round
+  - `Enter` starts a new round when idle/finished
+- Auto-resizing input field to avoid typing scrollbars
+- Dark glassmorphism design with purple accent styling
 
 ## Project Structure
 
-typing-speed-game/ │ ├── index.html ├── css/ │ └── style.css ├── js/ │
-├── data.js │ ├── game.js │ ├── ui.js │ └── main.js
+```text
+typing-speed-game/
+|-- index.html
+|-- css/
+|   `-- style.css
+`-- js/
+    |-- data.js
+    |-- game.js
+    |-- ui.js
+    `-- main.js
+```
 
-------------------------------------------------------------------------
+## Architecture Responsibilities
 
-## Requirements
+- `js/data.js`
+  - Quote dataset and categories
+- `js/game.js`
+  - Game state and timing lifecycle
+  - Session mode logic (`quote`, `30s`, `60s`)
+  - Scoring (WPM, accuracy, time)
+  - Best-score and ghost persistence
+- `js/ui.js`
+  - DOM rendering and UI updates
+  - Character highlight rendering
+  - Settings controls and result rendering
+- `js/main.js`
+  - Orchestration and event wiring
 
-You only need:
+## How to Run Locally
 
--   A modern web browser
--   A local server
+Because this project uses ES modules, run it through a local server.
 
-Because the project uses **JavaScript ES modules**, opening `index.html`
-directly may not work correctly in some browsers. It is recommended to
-run the project using a local server.
+### Option 1: VS Code Live Server
 
-------------------------------------------------------------------------
+1. Open the project in VS Code.
+2. Install the Live Server extension.
+3. Right-click `index.html`.
+4. Click **Open with Live Server**.
 
-## Running the Project Locally
+### Option 2: Python
 
-### Option 1 --- VS Code Live Server (Recommended)
-
-1.  Download or clone this repository
-2.  Open the folder in **Visual Studio Code**
-3.  Install the **Live Server** extension
-4.  Right‑click `index.html`
-5.  Click **Open with Live Server**
-
-Your browser will open automatically.
-
-------------------------------------------------------------------------
-
-### Option 2 --- Python
-
-If Python is installed:
-
-``` bash
+```bash
 python -m http.server 8000
 ```
 
 Then open:
 
+```text
 http://localhost:8000
-
-------------------------------------------------------------------------
-
-### Option 3 --- Node.js
-
-Install a static server:
-
-``` bash
-npm install -g serve
 ```
 
-Run the project:
+## Controls
 
-``` bash
-serve
-```
+- Click **Start** to begin
+- Click **Restart** to reset
+- `Escape`: reset current round
+- `Enter`: start a new round when not actively playing
 
-Then open the URL shown in the terminal.
+## Supported Modes
 
-------------------------------------------------------------------------
+- `Quote`
+  - Type a single quote as accurately and quickly as possible.
+  - Ghost pace marker is available in this mode.
+- `30s` / `60s`
+  - Timed sessions that continue serving new quotes when one is completed.
+  - Session ends automatically when the timer expires.
 
-## How to Play
+## Quote Categories
 
-1.  Click **Start**
-2.  A random sentence will appear
-3.  Type the sentence into the input box
-4.  The game calculates:
-    -   WPM
-    -   Time
-    -   Accuracy
-5.  Click **Restart** to play again
+Use the category selector (in quote mode) to focus on:
 
-------------------------------------------------------------------------
+- All
+- Coding
+- Motivational
+- General
 
-## Technologies Used
+If a category has no valid entries, the game safely falls back to `All`.
 
--   HTML5
--   CSS3
--   JavaScript (ES Modules)
+## Best-Score Persistence
 
-------------------------------------------------------------------------
+Best scores are saved in browser `localStorage` and survive page reloads:
 
-## Possible Future Improvements
+- Best WPM
+- Best Accuracy
+- Best Time
 
--   Character‑by‑character highlighting
--   Final result summary
--   Best score saved with LocalStorage
--   Difficulty levels
--   Additional sentence datasets
+## Ghost Mode
 
-------------------------------------------------------------------------
+Ghost mode stores progress-over-time from your best quote run and replays it as a thin marker on the progress bar.
+This gives you a pace reference for future quote runs.
+
+## Future Improvements
+
+- Per-mode leaderboards
+- More quote packs and difficulty presets
+- Optional custom quote import
+- Better accessibility presets (font size/contrast toggles)
+- Optional sound cues and streak indicators
 
 ## Author
 
-**Abdil Turdaliyev**
+Abdil Turdaliyev

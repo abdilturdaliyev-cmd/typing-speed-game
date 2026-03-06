@@ -6,11 +6,17 @@ const game = new TypingGame(sentences);
 const ui = new GameUI();
 let activeSentence = "";
 let countdownHideTimeoutId = null;
+let isRoundFinalized = false;
 
 game.setTickHandler((snapshot) => {
     ui.updateStats(snapshot.stats);
     ui.updateProgress(snapshot.progress);
     ui.updateGhostProgress(snapshot.ghostProgress);
+    ui.updateRunHints(snapshot.bestStats, snapshot.modeLabel, Number.isFinite(snapshot.ghostProgress));
+
+    if (snapshot.isSessionComplete) {
+        finalizeRound(snapshot.stats, snapshot.bestStats, snapshot.modeLabel);
+    }
 });
 
 game.setCountdownTickHandler((countValue) => {
@@ -30,6 +36,8 @@ game.setCountdownCompleteHandler(() => {
 
 function startGame() {
     clearCountdownHideTimeout();
+    isRoundFinalized = false;
+
     const startResult = game.start();
 
     if (!startResult) {
@@ -47,7 +55,8 @@ function startGame() {
         ui.updateProgress(0);
         ui.updateGhostProgress(null);
         ui.clearResults();
-        ui.updateBestStats(game.getBestStats());
+        ui.updateBestStats(startResult.bestStats);
+        ui.updateRunHints(startResult.bestStats, startResult.modeLabel, false);
         ui.hideResults();
         ui.setStartButtonDisabled(false);
         ui.setStartButtonLabel("Start");
@@ -55,7 +64,10 @@ function startGame() {
     }
 
     activeSentence = startResult.sentence;
+    ui.setSelectedSessionMode(startResult.sessionMode);
     ui.setSelectedCategory(startResult.activeCategory);
+    ui.setStopOnErrorEnabled(startResult.stopOnError);
+    ui.setQuoteCategoryEnabled(startResult.sessionMode === "quote");
     ui.renderSentence(activeSentence);
     ui.clearInput();
     ui.clearInputClasses();
@@ -63,6 +75,7 @@ function startGame() {
     ui.updateStats(startResult.stats);
     ui.updateProgress(startResult.progress);
     ui.updateGhostProgress(startResult.ghostProgress);
+    ui.updateRunHints(startResult.bestStats, startResult.modeLabel, Number.isFinite(startResult.ghostProgress));
     ui.clearResults();
     ui.hideResults();
     ui.setStartButtonDisabled(true);
@@ -79,28 +92,56 @@ function handleTyping() {
         return;
     }
 
-    const renderState = ui.renderSentence(activeSentence, typedText);
-    ui.setInputError(renderState.hasMismatch);
+    if (result.correctedTypedText !== typedText) {
+        ui.setInputValue(result.correctedTypedText);
+    }
+
+    if (result.sentenceChanged) {
+        activeSentence = result.sentence;
+    }
+
+    const renderState = ui.renderSentence(activeSentence, result.typedText);
+    ui.setInputError(renderState.hasMismatch || result.blockedOnError);
     ui.updateStats(result.stats);
     ui.updateProgress(result.progress);
     ui.updateGhostProgress(result.ghostProgress);
+    ui.updateRunHints(result.bestStats, result.modeLabel, Number.isFinite(result.ghostProgress));
 
-    if (result.isComplete) {
-        ui.disableInput();
-        ui.setInputError(false);
-        ui.setInputSuccess(true);
-        ui.setStartButtonDisabled(false);
-        ui.setStartButtonLabel("Play Again");
-        ui.showResults(result.stats, result.bestStats);
+    if (result.isSessionComplete) {
+        finalizeRound(result.stats, result.bestStats, result.modeLabel);
     }
+}
+
+function finalizeRound(stats, bestStats, modeLabel) {
+    if (isRoundFinalized) {
+        return;
+    }
+
+    isRoundFinalized = true;
+    ui.disableInput();
+    ui.setInputError(false);
+    ui.setInputSuccess(stats.accuracy === 100);
+    ui.setStartButtonDisabled(false);
+    ui.setStartButtonLabel("Play Again");
+    ui.showResults(stats, bestStats, modeLabel);
 }
 
 function resetGame() {
     clearCountdownHideTimeout();
+    isRoundFinalized = false;
     game.reset();
     activeSentence = "";
-    ui.resetScreenState(game.getBestStats());
+    ui.setSelectedSessionMode(game.getSessionMode());
     ui.setSelectedCategory(game.getCategory());
+    ui.setStopOnErrorEnabled(game.getStopOnError());
+    ui.setQuoteCategoryEnabled(game.getSessionMode() === "quote");
+    ui.resetScreenState(game.getBestStats(), game.getSessionModeLabel(), game.hasGhostData());
+}
+
+function handleSessionModeChange() {
+    const selectedMode = ui.getSelectedSessionMode();
+    game.setSessionMode(selectedMode);
+    resetGame();
 }
 
 function handleQuoteModeChange() {
@@ -110,6 +151,10 @@ function handleQuoteModeChange() {
     if (activeCategory !== selectedCategory) {
         ui.setSelectedCategory(activeCategory);
     }
+}
+
+function handleStopOnErrorChange() {
+    game.setStopOnError(ui.isStopOnErrorEnabled());
 }
 
 function clearCountdownHideTimeout() {
@@ -135,8 +180,13 @@ function handleKeyboardShortcuts(event) {
 ui.bindStart(startGame);
 ui.bindTyping(handleTyping);
 ui.bindReset(resetGame);
+ui.bindSessionModeChange(handleSessionModeChange);
 ui.bindQuoteModeChange(handleQuoteModeChange);
+ui.bindStopOnErrorChange(handleStopOnErrorChange);
 document.addEventListener("keydown", handleKeyboardShortcuts);
 
+ui.setSelectedSessionMode(game.getSessionMode());
+ui.setStopOnErrorEnabled(game.getStopOnError());
 handleQuoteModeChange();
-ui.resetScreenState(game.getBestStats());
+ui.setQuoteCategoryEnabled(game.getSessionMode() === "quote");
+ui.resetScreenState(game.getBestStats(), game.getSessionModeLabel(), game.hasGhostData());
