@@ -230,14 +230,101 @@ export class TypingGame {
         return this.getStats();
     }
 
+    handleKeyInput(keyEvent) {
+        if (!this.isPlaying || this.isCountingDown) {
+            return null;
+        }
+
+        const key = typeof keyEvent?.key === "string" ? keyEvent.key : "";
+        const hasModifier = Boolean(keyEvent?.altKey || keyEvent?.ctrlKey || keyEvent?.metaKey);
+
+        if (key === "Backspace") {
+            const previousTextLength = this.typedText.length;
+            this.typedText = this.typedText.slice(0, -1);
+
+            return this.buildTypingResult({
+                blockedOnError: false,
+                inputType: "backspace",
+                typedCharacter: "",
+                typedTextChanged: this.typedText.length !== previousTextLength,
+                shouldPreventDefault: true
+            });
+        }
+
+        if (hasModifier || key.length !== 1) {
+            return null;
+        }
+
+        if (this.typedText.length >= this.currentSentence.length) {
+            return this.buildTypingResult({
+                blockedOnError: false,
+                inputType: "character",
+                typedCharacter: key,
+                typedTextChanged: false,
+                shouldPreventDefault: true
+            });
+        }
+
+        const nextTypedText = `${this.typedText}${key}`;
+
+        if (this.stopOnError && !this.isPrefixMatch(nextTypedText, this.currentSentence)) {
+            return this.buildTypingResult({
+                blockedOnError: true,
+                inputType: "character",
+                typedCharacter: key,
+                typedTextChanged: false,
+                shouldPreventDefault: true
+            });
+        }
+
+        this.typedText = nextTypedText;
+
+        return this.buildTypingResult({
+            blockedOnError: false,
+            inputType: "character",
+            typedCharacter: key,
+            typedTextChanged: true,
+            shouldPreventDefault: true
+        });
+    }
+
     handleTyping(typedText) {
         if (!this.isPlaying || this.isCountingDown) {
             return null;
         }
 
         const incomingText = typeof typedText === "string" ? typedText : "";
+        const cappedText = incomingText.slice(0, this.currentSentence.length);
 
-        if (this.stopOnError && !this.isPrefixMatch(incomingText, this.currentSentence)) {
+        if (this.stopOnError && !this.isPrefixMatch(cappedText, this.currentSentence)) {
+            return this.buildTypingResult({
+                blockedOnError: true
+            });
+        }
+
+        const previousText = this.typedText;
+        this.typedText = cappedText;
+
+        return this.buildTypingResult({
+            blockedOnError: false,
+            inputType: "sync",
+            typedCharacter: "",
+            typedTextChanged: this.typedText !== previousText,
+            shouldPreventDefault: false
+        });
+    }
+
+    buildTypingResult({
+        blockedOnError = false,
+        inputType = "sync",
+        typedCharacter = "",
+        typedTextChanged = false,
+        shouldPreventDefault = false
+    } = {}) {
+        const hasMismatch = this.hasTextMismatch(this.typedText, this.currentSentence);
+        const hasError = blockedOnError || hasMismatch;
+
+        if (blockedOnError) {
             const blockedSnapshot = this.getLiveSnapshot();
             return {
                 isComplete: false,
@@ -247,6 +334,12 @@ export class TypingGame {
                 typedText: this.typedText,
                 correctedTypedText: this.typedText,
                 blockedOnError: true,
+                inputType,
+                typedCharacter,
+                typedTextChanged: false,
+                shouldPreventDefault,
+                hasMismatch,
+                hasError,
                 stats: blockedSnapshot.stats,
                 progress: blockedSnapshot.progress,
                 ghostProgress: blockedSnapshot.ghostProgress,
@@ -254,8 +347,6 @@ export class TypingGame {
                 modeLabel: blockedSnapshot.modeLabel
             };
         }
-
-        this.typedText = incomingText;
 
         if (!this.hasStartedTyping && this.typedText.length > 0) {
             this.hasStartedTyping = true;
@@ -292,6 +383,12 @@ export class TypingGame {
                 typedText: this.typedText,
                 correctedTypedText: this.typedText,
                 blockedOnError: false,
+                inputType,
+                typedCharacter,
+                typedTextChanged,
+                shouldPreventDefault,
+                hasMismatch: this.hasTextMismatch(this.typedText, this.currentSentence),
+                hasError: false,
                 stats: nextSnapshot.stats,
                 progress,
                 ghostProgress: nextSnapshot.ghostProgress,
@@ -310,6 +407,12 @@ export class TypingGame {
                 typedText: this.typedText,
                 correctedTypedText: this.typedText,
                 blockedOnError: false,
+                inputType,
+                typedCharacter,
+                typedTextChanged,
+                shouldPreventDefault,
+                hasMismatch: false,
+                hasError: false,
                 stats: finalState.stats,
                 progress: finalState.progress,
                 ghostProgress: finalState.ghostProgress,
@@ -327,6 +430,12 @@ export class TypingGame {
             typedText: this.typedText,
             correctedTypedText: this.typedText,
             blockedOnError: false,
+            inputType,
+            typedCharacter,
+            typedTextChanged,
+            shouldPreventDefault,
+            hasMismatch,
+            hasError,
             stats: snapshot.stats,
             progress: snapshot.progress,
             ghostProgress: snapshot.ghostProgress,
@@ -684,6 +793,10 @@ export class TypingGame {
         }
 
         return true;
+    }
+
+    hasTextMismatch(typedText, expectedText) {
+        return !this.isPrefixMatch(typedText, expectedText);
     }
 
     normalizeSentences(sentenceData) {

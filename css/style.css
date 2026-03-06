@@ -118,6 +118,7 @@ h1 {
     line-height: 1.6;
     padding: 1.5rem;
     background: rgba(0, 0, 0, 0.3);
+    border: 2px solid transparent;
     border-radius: 12px;
     margin-bottom: 0;
     min-height: 80px;
@@ -127,7 +128,15 @@ h1 {
     overflow-wrap: normal;
     word-break: normal;
     color: #cbd5e1;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sentence-area.success #sentence-box {
+    border-color: var(--success);
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.2),
+        0 0 15px rgba(16, 185, 129, 0.3);
 }
 
 #sentence-box .char {
@@ -152,6 +161,13 @@ h1 {
 
 #sentence-box .char.incorrect {
     color: var(--error);
+    background: rgba(239, 68, 68, 0.16);
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.3);
+}
+
+#sentence-box .char.incorrect.incorrect-new {
+    animation: incorrect-char-flash 0.2s ease-out;
 }
 
 #sentence-box .char.current {
@@ -235,43 +251,29 @@ h1 {
     }
 }
 
-#input-field {
-    width: 100%;
-    font-family: 'Fira Code', 'Courier New', monospace;
-    font-size: 1.2rem;
-    line-height: 1.5;
-    padding: 1.2rem;
-    background: rgba(0, 0, 0, 0.2);
-    color: var(--text-main);
-    border: 2px solid transparent;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-sizing: border-box;
-    transition: all 0.3s ease;
-    resize: none;
-    overflow-y: hidden;
+@keyframes incorrect-char-flash {
+    0% {
+        background: rgba(248, 113, 113, 0.36);
+        box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.65);
+    }
+
+    100% {
+        background: rgba(239, 68, 68, 0.16);
+        box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.3);
+    }
 }
 
-#input-field:focus {
-    outline: none;
-    border-color: #6366f1;
-    box-shadow: var(--glow);
-    background: rgba(0, 0, 0, 0.4);
-}
-
-#input-field:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-#input-field.error {
-    border-color: var(--error);
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
-}
-
-#input-field.success {
-    border-color: var(--success);
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+.typing-capture {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    pointer-events: none;
 }
 
 .progress-wrap {

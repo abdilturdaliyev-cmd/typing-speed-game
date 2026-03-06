@@ -48,7 +48,17 @@
             <div id="countdown-overlay" class="countdown-overlay hidden" aria-live="assertive"></div>
         </div>
         
-        <textarea id="input-field" rows="2" disabled placeholder="Waiting for you..."></textarea>
+        <input
+            id="input-field"
+            class="typing-capture"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            disabled
+            aria-label="Typing capture input"
+        >
 
         <div class="progress-wrap" aria-hidden="true">
             <div class="progress-track">

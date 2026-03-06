@@ -5,7 +5,6 @@ import { GameUI } from "./ui.js";
 const game = new TypingGame(sentences);
 const ui = new GameUI();
 let activeSentence = "";
-let lastTypedText = "";
 let countdownHideTimeoutId = null;
 let isRoundFinalized = false;
 
@@ -39,7 +38,6 @@ function startGame() {
     ui.primeAudio();
     clearCountdownHideTimeout();
     isRoundFinalized = false;
-    lastTypedText = "";
 
     const startResult = game.start();
 
@@ -49,7 +47,6 @@ function startGame() {
 
     if (startResult.error === "NO_SENTENCES") {
         activeSentence = "";
-        lastTypedText = "";
         ui.updateSentenceText("No sentences available. Add items in js/data.js.");
         ui.clearInput();
         ui.disableInput();
@@ -88,62 +85,56 @@ function startGame() {
     game.startCountdown(3);
 }
 
-function handleTyping() {
-    const attemptedTypedText = ui.getInputValue();
-    const previousTypedText = lastTypedText;
+function handleTyping(event) {
     const expectedText = activeSentence;
-    const result = game.handleTyping(attemptedTypedText);
+    const result = game.handleKeyInput(event);
 
     if (!result) {
         return;
     }
 
-    playTypingSoundFeedback({
-        previousTypedText,
-        attemptedTypedText,
-        expectedText,
-        blockedOnError: result.blockedOnError
-    });
-
-    if (result.correctedTypedText !== attemptedTypedText) {
-        ui.setInputValue(result.correctedTypedText);
+    if (result.shouldPreventDefault) {
+        event.preventDefault();
     }
+
+    ui.clearInput();
+    playTypingSoundFeedback(result, expectedText);
 
     if (result.sentenceChanged) {
         activeSentence = result.sentence;
     }
 
-    const renderState = ui.renderSentence(activeSentence, result.typedText);
-    ui.setInputError(renderState.hasMismatch || result.blockedOnError);
+    ui.renderSentence(activeSentence, result.typedText);
+    ui.setInputError(result.hasError);
     ui.updateStats(result.stats);
     ui.updateProgress(result.progress);
     ui.updateGhostProgress(result.ghostProgress);
     ui.updateRunHints(result.bestStats, result.modeLabel, Number.isFinite(result.ghostProgress));
-    lastTypedText = result.sentenceChanged ? "" : result.typedText;
 
     if (result.isSessionComplete) {
         finalizeRound(result.stats, result.bestStats, result.modeLabel);
     }
 }
 
-function playTypingSoundFeedback({
-    previousTypedText,
-    attemptedTypedText,
-    expectedText,
-    blockedOnError
-}) {
-    if (attemptedTypedText.length <= previousTypedText.length) {
+function playTypingSoundFeedback(result, expectedText) {
+    if (result.inputType !== "character") {
         return;
     }
 
-    if (blockedOnError) {
+    if (result.blockedOnError) {
         ui.playErrorSound();
         return;
     }
 
+    if (!result.typedTextChanged) {
+        return;
+    }
+
     const safeExpectedText = typeof expectedText === "string" ? expectedText : "";
-    const newestCharIndex = attemptedTypedText.length - 1;
-    const typedCharacter = attemptedTypedText[newestCharIndex];
+    const newestCharIndex = result.sentenceChanged
+        ? Math.max(0, safeExpectedText.length - 1)
+        : Math.max(0, result.typedText.length - 1);
+    const typedCharacter = result.typedCharacter;
     const expectedCharacter = safeExpectedText[newestCharIndex];
 
     if (typedCharacter === expectedCharacter) {
@@ -172,7 +163,6 @@ function finalizeRound(stats, bestStats, modeLabel) {
 function resetGame() {
     clearCountdownHideTimeout();
     isRoundFinalized = false;
-    lastTypedText = "";
     game.reset();
     activeSentence = "";
     ui.setSelectedSessionMode(game.getSessionMode());
@@ -207,6 +197,15 @@ function handleSoundChange(isEnabled) {
     }
 }
 
+function handleSentenceFocus(event) {
+    if (!game.isRoundActive()) {
+        return;
+    }
+
+    event.preventDefault();
+    ui.focusInput();
+}
+
 function clearCountdownHideTimeout() {
     if (countdownHideTimeoutId !== null) {
         clearTimeout(countdownHideTimeoutId);
@@ -229,6 +228,7 @@ function handleKeyboardShortcuts(event) {
 
 ui.bindStart(startGame);
 ui.bindTyping(handleTyping);
+ui.bindSentenceFocus(handleSentenceFocus);
 ui.bindReset(resetGame);
 ui.bindSessionModeChange(handleSessionModeChange);
 ui.bindQuoteModeChange(handleQuoteModeChange);

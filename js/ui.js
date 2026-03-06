@@ -1,6 +1,4 @@
 const DEFAULT_SENTENCE_TEXT = 'Click "Start" to reveal your sentence!';
-const WAITING_PLACEHOLDER = "Waiting for you...";
-const ACTIVE_PLACEHOLDER = "Type the text above...";
 const COUNTDOWN_GO_LABEL = "Go";
 const DEFAULT_MODE_LABEL = "Quote";
 const SOUND_SETTING_STORAGE_KEY = "typing-game-sound-enabled-v1";
@@ -181,6 +179,7 @@ class SoundManager {
 
 export class GameUI {
     constructor() {
+        this.sentenceArea = document.querySelector(".sentence-area");
         this.sentenceBox = document.getElementById("sentence-box");
         this.sessionModeSelect = document.getElementById("session-mode");
         this.quoteCategoryWrap = document.getElementById("quote-category-wrap");
@@ -208,8 +207,6 @@ export class GameUI {
         this.bestAccuracyDisplay = document.getElementById("best-accuracy");
         this.bestTimeDisplay = document.getElementById("best-time");
         this.soundManager = new SoundManager();
-        this.inputBaseHeight = this.inputField.offsetHeight;
-        this.autoResizeInput();
         const isSoundEnabled = this.loadSoundPreference();
         this.setSoundEnabled(isSoundEnabled, false);
     }
@@ -223,10 +220,17 @@ export class GameUI {
     }
 
     bindTyping(handler) {
-        this.inputField.addEventListener("input", () => {
-            this.autoResizeInput();
-            handler();
+        this.inputField.addEventListener("keydown", (event) => {
+            handler(event);
         });
+    }
+
+    bindSentenceFocus(handler) {
+        if (!this.sentenceArea) {
+            return;
+        }
+
+        this.sentenceArea.addEventListener("pointerdown", handler);
     }
 
     bindSessionModeChange(handler) {
@@ -342,6 +346,11 @@ export class GameUI {
         if (charIndex < typedLength) {
             const isCorrect = typedText[charIndex] === character;
             charSpan.classList.add(isCorrect ? "correct" : "incorrect");
+
+            if (!isCorrect && charIndex === typedLength - 1) {
+                charSpan.classList.add("incorrect-new");
+            }
+
             isMismatch = !isCorrect;
         } else if (charIndex === typedLength && typedLength < sentenceLength) {
             charSpan.classList.add("current");
@@ -471,9 +480,8 @@ export class GameUI {
         this.countdownOverlay.classList.add("hidden");
     }
 
-    enableInput(placeholder = ACTIVE_PLACEHOLDER) {
+    enableInput() {
         this.inputField.disabled = false;
-        this.inputField.placeholder = placeholder;
     }
 
     disableInput() {
@@ -481,12 +489,11 @@ export class GameUI {
     }
 
     clearInput() {
-        this.setInputValue("");
+        this.inputField.value = "";
     }
 
     setInputValue(value) {
         this.inputField.value = value;
-        this.autoResizeInput();
     }
 
     getInputValue() {
@@ -494,19 +501,43 @@ export class GameUI {
     }
 
     focusInput() {
-        this.inputField.focus();
+        if (this.inputField.disabled) {
+            return;
+        }
+
+        this.inputField.focus({ preventScroll: true });
+        const valueLength = this.inputField.value.length;
+        this.inputField.setSelectionRange(valueLength, valueLength);
     }
 
     setInputError(hasError) {
-        this.inputField.classList.toggle("error", hasError);
+        if (!this.sentenceArea) {
+            return;
+        }
+
+        this.sentenceArea.classList.toggle("error", hasError);
+        if (hasError) {
+            this.sentenceArea.classList.remove("success");
+        }
     }
 
     setInputSuccess(hasSuccess) {
-        this.inputField.classList.toggle("success", hasSuccess);
+        if (!this.sentenceArea) {
+            return;
+        }
+
+        this.sentenceArea.classList.toggle("success", hasSuccess);
+        if (hasSuccess) {
+            this.sentenceArea.classList.remove("error");
+        }
     }
 
     clearInputClasses() {
-        this.inputField.classList.remove("success", "error");
+        if (!this.sentenceArea) {
+            return;
+        }
+
+        this.sentenceArea.classList.remove("success", "error");
     }
 
     setStartButtonDisabled(isDisabled) {
@@ -553,7 +584,6 @@ export class GameUI {
         this.updateSentenceText(DEFAULT_SENTENCE_TEXT);
         this.clearInput();
         this.disableInput();
-        this.inputField.placeholder = WAITING_PLACEHOLDER;
         this.clearInputClasses();
         this.setStartButtonDisabled(false);
         this.setStartButtonLabel("Start");
@@ -564,12 +594,6 @@ export class GameUI {
         this.updateBestStats(bestStats);
         this.updateRunHints(bestStats, modeLabel, hasGhostPace);
         this.hideResults();
-    }
-
-    autoResizeInput() {
-        this.inputField.style.height = "auto";
-        const targetHeight = Math.max(this.inputBaseHeight, this.inputField.scrollHeight);
-        this.inputField.style.height = `${targetHeight}px`;
     }
 
     keepCurrentCharacterVisible() {
